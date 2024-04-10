@@ -32,7 +32,8 @@ select
 		    SUM(f.CountofSDVRequiredandCompleted) over (partition by (spi.StudyParticipantFormUUID)) as CountofSDVRequiredandCompleted,
 		    Case when CountofSDVRequired >0 and CountofSDVRequired = CountofSDVRequiredandCompleted then 'SDV Complete' 
                  when CountofSDVRequired >0 and CountofSDVRequired > CountofSDVRequiredandCompleted then 'SDV Partially Complete'
-                 when CountofSDVRequired >0 and CountofSDVRequiredandCompleted=0 then 'Not Started'
+                 when CountofSDVRequired >0 and CountofSDVRequiredandCompleted=0 then 'SDV Not Started'
+	         when CountofSDVRequired = 0 then 'SDV Not Required'
             end as SDVStatus
 	    from FACT_STUDY_PARTICIPANT_ITEM_AGG_SDVSTATUS_RAVE f
 		inner join DIM_STUDY stu on stu.StudyKey = f.StudyKey 
@@ -46,10 +47,10 @@ select
 		inner join DIM_STUDYPARTICIPANTITEM spi on spi.StudyParticipantItemKey = f.StudyParticipantItemKey
 		inner join DIM_ITEM i on i.ItemUUID = f.ItemUUID
                 inner join ITEM_ALIAS ia on ia.ItemUUID = i.ItemUUID and ia.ITEM_ALIAS_OID IN ('AETERM','AESER','AESTDTC','AEENDDTC')
-		where f.BusinessDatetime between &&SIMStartdate and &&SIMEnddate 
+		where f.BusinessDatetime <= &&SIMEnddate 
 	    and   f.SystemDateTime = ( SELECT MAX(f.SystemDateTime) over (partition by (spi.BusinessDatetime)) 
 				                   FROM DIM_STUDYPARTICIPANTITEM spi 
-				                   WHERE spi.BusinessDatetime between &&SIMStartdate and &&SIMEnddate
+				                   WHERE spi.BusinessDatetime <= &&SIMEnddate
 				                   AND spi.StudyParticipantItemKey = f.StudyParticipantItemKey
 				                 )
 	    group by stu.StudyUUID, stuenv.StudyEnvUUID, cty.StudyCountryUUID, ss.StudySiteUUID, sp.StudyParticipantUUID, sppv.StudyParticipantPerformedVisitUUID, spf.StudyParticipantFormUUID 
