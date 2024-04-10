@@ -45,7 +45,7 @@ select
 		inner join DIM_STUDYPARTICIPANTFORM spf on spf.StudyParticipantFormKey = f.StudyParticipantFormKey
 		inner join DIM_STUDYPARTCIPANTITEMGROUP spig on spig.StudyParticipantItemGroupKey = f.StudyParticipantItemGroupKey
 		inner join DIM_STUDYPARTICIPANTITEM spi on spi.StudyParticipantItemKey = f.StudyParticipantItemKey
-		where f.BusinessDatetime between &&SIMStartdate and &&SIMEnddate 
+		where f.BusinessDatetime <= &&SIMEnddate 
 	    and   f.SystemDateTime = ( SELECT MAX(f.SystemDateTime) over (partition by (spi.BusinessDatetime)) 
 				                   FROM DIM_STUDYPARTICIPANTITEM spi 
 				                   WHERE spi.BusinessDatetime <= &&SIMEnddate
