@@ -47,7 +47,7 @@ select
 		inner join DIM_STUDYPARTICIPANTITEM spi on spi.StudyParticipantItemKey = f.StudyParticipantItemKey
 		inner join DIM_ITEM i on i.ItemUUID = f.ItemUUID
         inner join ITEM_ALIAS ia on ia.ItemUUID = i.ItemUUID and ia.ITEM_ALIAS_OID IN ('AETERM','AESER','AESTDTC','AEENDDTC')
-		where f.BusinessDatetime between &&SIMStartdate and &&SIMEnddate 
+		where f.BusinessDatetime <= &&SIMEnddate 
 	    and   f.SystemDateTime = ( SELECT MAX(f.SystemDateTime) over (partition by (spi.BusinessDatetime)) 
 				                   FROM DIM_STUDYPARTICIPANTITEM spi 
 				                   WHERE spi.BusinessDatetime <= &&SIMEnddate
