@@ -32,7 +32,7 @@ from FACT_STU_PNT_ITM_AGG_SDVSTATUS_RAVE f
                 inner join  DIM_ITM_ALIAS ia on ia.ITM_UUID = i.ITM_UUID and ia.ITM_ALIAS_OID IN 
                           ('AETERM','AESER','AESTDTC','AEENDDTC') -- Dimension Outrigger 
 		where (f.STU_PNT_ITM_KEY,f.BUSINESS_DT_TIME,f.SYS_DT_TIME) IN 
-                                  ( select stu_pnt_itm_key,row_eff_at, max(load_dt) over (partition by                                                              stu_pnt_itm_key,row_eff_at) 
+                                  ( select stu_pnt_itm_key,row_eff_at, max(load_dt) over (partition by stu_pnt_itm_key,row_eff_at) 
                                     from DIM_STU_PNT_ITM spi 
                                     where STU_UUID = TO_BINARY('11EDD461333B3E0998110E1498653597')
                                     and row_eff_at <= '2024-01-21'
@@ -42,9 +42,9 @@ from FACT_STU_PNT_ITM_AGG_SDVSTATUS_RAVE f
                           where stu.STU_UUID = TO_BINARY('11EDD461333B3E0998110E1498653597')
                           and stu.row_eff_at <= '2024-01-21' )
 	 group by stu.STU_uuid,stuenv.STU_ENV_uuid,cty.CTY_uuid,ss.STU_SITE_uuid,sp.STU_PNT_uuid,mdv.mdv_uuid,sppv.STU_PNT_PRF_EVT_uuid,
-	          spf.STU_PNT_FRM_uuid
-	order by  stu.STU_uuid,stuenv.STU_ENV_uuid,cty.CTY_uuid,ss.STU_SITE_uuid,sp.STU_PNT_uuid,mdv.mdv_uuid,sppv.STU_PNT_PRF_EVT_uuid,
-	          spf.STU_PNT_FRM_uuid--,spig.stu_pnt_itm_grp_uuid,spi.stu_pnt_itm_uuid,spia.audit_uuid
+	          spf.STU_PNT_FRM_uuid,spig.stu_pnt_grp_uuid,spi.stu_pnt_itm_uuid
+	order by stu.STU_uuid,stuenv.STU_ENV_uuid,cty.CTY_uuid,ss.STU_SITE_uuid,sp.STU_PNT_uuid,mdv.mdv_uuid,sppv.STU_PNT_PRF_EVT_uuid,
+	          spf.STU_PNT_FRM_uuid,spig.stu_pnt_itm_grp_uuid,spi.stu_pnt_itm_uuid
 ) 
 
 
@@ -135,7 +135,8 @@ where (f.AUDIT_KEY,f.BUSINESS_DT_TIME,f.SYS_DT_TIME) IN
                             (select distinct spia.audit_uuid, spia.row_eff_at,
                                 max(spia.load_dt) over (partition by audit_uuid,row_eff_at,AUDIT_SUBCAT_ID)  
                              from DIM_STU_PNT_ITM_AUDIT spia
-                             where spia.STU_PNT_ITM_UUID IN (select spi.stu_pnt_itm_uuid                                                                                                      from DIM_STU_PNT_ITM spi
+                             where spia.STU_PNT_ITM_UUID IN (select spi.stu_pnt_itm_uuid 
+                                                             from DIM_STU_PNT_ITM spi
                                                          where spi.STU_UUID=TO_BINARY('11EDD461333B3E0998110E1498653597')
                                                              and spi.row_eff_at between '2024-01-21' and '2024-04-21' ) 
                              and spia.AUDIT_SUBCAT_ID = 17
@@ -194,7 +195,8 @@ where (f.AUDIT_KEY,f.BUSINESS_DT_TIME,f.SYS_DT_TIME) IN
                             (select distinct spia.audit_uuid, spia.row_eff_at,
                                 max(spia.load_dt) over (partition by audit_uuid,row_eff_at,AUDIT_SUBCAT_ID)  
                              from DIM_STU_PNT_ITM_AUDIT spia
-                             where spia.STU_PNT_ITM_UUID IN (select spi.stu_pnt_itm_uuid                                                                                                      from DIM_STU_PNT_ITM spi
+                             where spia.STU_PNT_ITM_UUID IN (select spi.stu_pnt_itm_uuid   
+	                                                     from DIM_STU_PNT_ITM spi
                                                          where spi.STU_UUID=TO_BINARY('11EDD461333B3E0998110E1498653597')
                                                              and spi.row_eff_at between '2024-01-21' and '2024-04-21' ) 
                              and spia.AUDIT_SUBCAT_ID = 18
