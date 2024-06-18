@@ -1,3 +1,5 @@
+ --Cumulative SDV Counts at Item level and Status for Study_uuid ='11EDD461333B3E0998110E1498653597' and Begin date of '2024-01-21'
+
 (select       stu.STU_uuid,
               stuenv.STU_ENV_uuid, 
               cty.CTY_uuid,
@@ -48,7 +50,7 @@ from FACT_STU_PNT_ITM_AGG_SDVSTATUS_RAVE f
 ) 
 
 
---Cumulative SDV Counts and Status for Study_uuid ='11EDD461333B3E0998110E1498653597' and End date of '2024-04-21'
+--Cumulative SDV Counts and Status at Item level for Study_uuid ='11EDD461333B3E0998110E1498653597' and End date of '2024-04-21'
 (select     stu.STU_uuid,
             stuenv.STU_ENV_uuid, 
             cty.CTY_uuid,
@@ -98,7 +100,7 @@ from FACT_STU_PNT_ITM_AGG_SDVSTATUS_RAVE f
 	             spf.STU_PNT_FRM_uuid,spig.stu_pnt_itm_grp_uuid,spi.stu_pnt_itm_uuid
 ) 
 
---Verified Dates at form level for Study_uuid ='11EDD461333B3E0998110E1498653597' between Begin date of '2024-01-21' and End date of  '2024-04-21'
+--Verified Dates at Item level for Study_uuid ='11EDD461333B3E0998110E1498653597' between Begin date of '2024-01-21' and End date of  '2024-04-21'
 (select       stu.STU_uuid,
               stuenv.STU_ENV_uuid, 
               cty.CTY_uuid,
@@ -157,7 +159,7 @@ order by stu.STU_uuid,stuenv.STU_ENV_uuid,cty.CTY_uuid,ss.STU_SITE_uuid,sp.STU_P
 	spf.STU_PNT_FRM_uuid,spig.stu_pnt_itm_grp_uuid,spi.stu_pnt_itm_uuid
 	)
 
-----UnVerified Dates at form level for Study_uuid ='11EDD461333B3E0998110E1498653597' between Begin date of '2024-01-21' and End date of '2024-04-21'
+----UnVerified Dates at Item level for Study_uuid ='11EDD461333B3E0998110E1498653597' between Begin date of '2024-01-21' and End date of '2024-04-21'
 (
 select        stu.STU_uuid,
               stuenv.STU_ENV_uuid, 
