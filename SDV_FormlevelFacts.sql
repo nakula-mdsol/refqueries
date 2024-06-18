@@ -1,12 +1,15 @@
  --Cumulative SDV Counts and Status for Begin date
 
-(select      f.STU_KEY,
-            f.STU_ENV_KEY, 
-            f.CTY_KEY,
-            f.STU_SITE_KEY,
-            f.STU_PNT_KEY, 
-            f.STU_PNT_PRF_EVT_KEY,
-            f.stu_pnt_frm_key,
+(select       stu.STU_uuid,
+              stuenv.STU_ENV_uuid, 
+              cty.CTY_uuid,
+              ss.STU_SITE_uuid,
+              sp.STU_PNT_uuid, 
+              mdv.mdv_uuid,
+              sppv.STU_PNT_PRF_EVT_uuid,
+              spf.stu_pnt_frm_uuid,
+              --spig.stu_pnt_itm_grp_uuid,
+              --spi.stu_pnt_itm_uuid,
             max(business_dt_time),
             max(f.sys_dt_time),
 SUM(f.CNT_OF_SDV_REQ) as CountofSDVRequired,
@@ -42,13 +45,16 @@ from FACT_STU_PNT_ITM_AGG_SDVSTATUS_RAVE f
 
 
 --Cumulative SDV Counts and Status for End Date
-(select      f.STU_KEY,
-            f.STU_ENV_KEY, 
-            f.CTY_KEY,
-            f.STU_SITE_KEY,
-            f.STU_PNT_KEY, 
-            f.STU_PNT_PRF_EVT_KEY,
-            f.stu_pnt_frm_key,
+(select       stu.STU_uuid,
+              stuenv.STU_ENV_uuid, 
+              cty.CTY_uuid,
+              ss.STU_SITE_uuid,
+              sp.STU_PNT_uuid, 
+              mdv.mdv_uuid,
+              sppv.STU_PNT_PRF_EVT_uuid,
+              spf.stu_pnt_frm_uuid,
+              --spig.stu_pnt_itm_grp_uuid,
+              --spi.stu_pnt_itm_uuid,
             max(business_dt_time),
             max(f.sys_dt_time),
 SUM(f.CNT_OF_SDV_REQ) as CountofSDVRequired,
@@ -79,7 +85,10 @@ from FACT_STU_PNT_ITM_AGG_SDVSTATUS_RAVE f
                           from DIM_STU stu
                           where stu.STU_UUID = TO_BINARY('11EDD461333B3E0998110E1498653597')
                           and stu.row_eff_at <= '2024-04-21' )
-	    group by f.STU_KEY,f.STU_ENV_KEY, f.CTY_KEY,f.STU_SITE_KEY,f.STU_PNT_KEY,f.STU_PNT_PRF_EVT_KEY,f.STU_PNT_FRM_KEY
+	group by stu.STU_uuid,stuenv.STU_ENV_uuid,cty.CTY_uuid,ss.STU_SITE_uuid,sp.STU_PNT_uuid,mdv.mdv_uuid,sppv.STU_PNT_PRF_EVT_uuid,
+	         spf.STU_PNT_FRM_uuid --,spig.stu_pnt_itm_grp_uuid,spi.stu_pnt_itm_uuid,spia.audit_uuid
+        order by stu.STU_uuid,stuenv.STU_ENV_uuid,cty.CTY_uuid,ss.STU_SITE_uuid,sp.STU_PNT_uuid,mdv.mdv_uuid,sppv.STU_PNT_PRF_EVT_uuid,
+	        spf.STU_PNT_FRM_uuid--,spig.stu_pnt_itm_grp_uuid,spi.stu_pnt_itm_uuid,spia.audit_uuid
 ) 
 
 --Verified Dates at form level
@@ -108,9 +117,6 @@ left  join DIM_STU_PNT_PRF_EVT sppv on sppv.STU_PNT_PRF_EVT_KEY = f.STU_PNT_PRF_
 inner join DIM_STU_PNT_FRM spf on spf.STU_PNT_FRM_KEY = f.STU_PNT_FRM_KEY
 inner join DIM_STU_PNT_ITM_GRP spig on spig.STU_PNT_ITM_GRP_KEY = f.STU_PNT_ITM_GRP_KEY
 inner join DIM_STU_PNT_ITM spi on spi.STU_PNT_ITM_KEY = f.STU_PNT_ITM_KEY
-/*inner join DIM_ITM i on i.ITM_KEY = f.ITM_KEY
-left join  DIM_ITM_ALIAS ia on ia.ITM_UUID = i.ITM_UUID and ia.ITM_ALIAS_OID IN 
-                          ('AETERM','AESER','AESTDTC','AEENDDTC') -- Dimension Outrigger */
 inner join DIM_STU_PNT_ITM_AUDIT spia on spia.AUDIT_KEY = f.AUDIT_KEY                                    
 where (f.AUDIT_KEY,f.BUSINESS_DT_TIME,f.SYS_DT_TIME) IN 
                     (select audit_key,row_eff_at,load_dt
@@ -134,10 +140,9 @@ and f.STU_KEY = (select STU_KEY
                  where stu.STU_UUID = TO_BINARY('11EDD461333B3E0998110E1498653597')
                  and stu.row_eff_at <= '2024-04-21'
                   ) 
-group by stu.STU_uuid,stuenv.STU_ENV_uuid,cty.CTY_uuid,ss.STU_SITE_uuid,sp.STU_PNT_uuid,mdv.mdv_uuid,sppv.
-STU_PNT_PRF_EVT_uuid,spf.STU_PNT_FRM_uuid --,spig.stu_pnt_itm_grp_uuid,spi.stu_pnt_itm_uuid,spia.audit_uuid
-order by
-stu.STU_uuid,stuenv.STU_ENV_uuid,cty.CTY_uuid,ss.STU_SITE_uuid,sp.STU_PNT_uuid,mdv.mdv_uuid,sppv.STU_PNT_PRF_EVT_uuid,
+group by stu.STU_uuid,stuenv.STU_ENV_uuid,cty.CTY_uuid,ss.STU_SITE_uuid,sp.STU_PNT_uuid,mdv.mdv_uuid,sppv.STU_PNT_PRF_EVT_uuid,
+	spf.STU_PNT_FRM_uuid --,spig.stu_pnt_itm_grp_uuid,spi.stu_pnt_itm_uuid,spia.audit_uuid
+order by stu.STU_uuid,stuenv.STU_ENV_uuid,cty.CTY_uuid,ss.STU_SITE_uuid,sp.STU_PNT_uuid,mdv.mdv_uuid,sppv.STU_PNT_PRF_EVT_uuid,
 	spf.STU_PNT_FRM_uuid--,spig.stu_pnt_itm_grp_uuid,spi.stu_pnt_itm_uuid,spia.audit_uuid
 	)
 
@@ -168,9 +173,6 @@ left  join DIM_STU_PNT_PRF_EVT sppv on sppv.STU_PNT_PRF_EVT_KEY = f.STU_PNT_PRF_
 inner join DIM_STU_PNT_FRM spf on spf.STU_PNT_FRM_KEY = f.STU_PNT_FRM_KEY
 inner join DIM_STU_PNT_ITM_GRP spig on spig.STU_PNT_ITM_GRP_KEY = f.STU_PNT_ITM_GRP_KEY
 inner join DIM_STU_PNT_ITM spi on spi.STU_PNT_ITM_KEY = f.STU_PNT_ITM_KEY
-/*inner join DIM_ITM i on i.ITM_KEY = f.ITM_KEY
-left join  DIM_ITM_ALIAS ia on ia.ITM_UUID = i.ITM_UUID and ia.ITM_ALIAS_OID IN 
-                          ('AETERM','AESER','AESTDTC','AEENDDTC') -- Dimension Outrigger */
 inner join DIM_STU_PNT_ITM_AUDIT spia on spia.AUDIT_KEY = f.AUDIT_KEY                                    
 where (f.AUDIT_KEY,f.BUSINESS_DT_TIME,f.SYS_DT_TIME) IN 
                     (select audit_key,row_eff_at,load_dt
@@ -194,10 +196,9 @@ and f.STU_KEY = (select STU_KEY
                  where stu.STU_UUID = TO_BINARY('11EDD461333B3E0998110E1498653597')
                  and stu.row_eff_at <= '2024-04-21'
                   ) 
-group by stu.STU_uuid,stuenv.STU_ENV_uuid,cty.CTY_uuid,ss.STU_SITE_uuid,sp.STU_PNT_uuid,mdv.mdv_uuid,sppv.
-STU_PNT_PRF_EVT_uuid,spf.STU_PNT_FRM_uuid --,spig.stu_pnt_itm_grp_uuid,spi.stu_pnt_itm_uuid,spia.audit_uuid
-order by
-stu.STU_uuid,stuenv.STU_ENV_uuid,cty.CTY_uuid,ss.STU_SITE_uuid,sp.STU_PNT_uuid,mdv.mdv_uuid,
-sppv.STU_PNT_PRF_EVT_uuid,spf.STU_PNT_FRM_uuid--,spig.stu_pnt_itm_grp_uuid,spi.stu_pnt_itm_uuid,spia.audit_uuid
+group by stu.STU_uuid,stuenv.STU_ENV_uuid,cty.CTY_uuid,ss.STU_SITE_uuid,sp.STU_PNT_uuid,mdv.mdv_uuid,sppv.STU_PNT_PRF_EVT_uuid,
+	spf.STU_PNT_FRM_uuid --,spig.stu_pnt_itm_grp_uuid,spi.stu_pnt_itm_uuid,spia.audit_uuid
+order by stu.STU_uuid,stuenv.STU_ENV_uuid,cty.CTY_uuid,ss.STU_SITE_uuid,sp.STU_PNT_uuid,mdv.mdv_uuid,sppv.STU_PNT_PRF_EVT_uuid,
+	spf.STU_PNT_FRM_uuid--,spig.stu_pnt_itm_grp_uuid,spi.stu_pnt_itm_uuid,spia.audit_uuid
 			                   
 )
