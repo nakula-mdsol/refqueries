@@ -1,154 +1,203 @@
-select 
-    coalesce(Q1.StudyUUID,Q2.StudyUUID),
-    coalesce(Q1.StudyEnvUUID, Q2.StudyEnvUUID),
-    coalesce(Q1.StudyCountryUUID,Q2.StudyCountryUUID),
-    coalesce(Q1.StudySiteUUID,Q2.StudySiteUUID),
-    coalesce(Q1.StudyParticipantUUID,Q2.StudyParticipantUUID),
-    coalesce(Q1.StudyParticipantPerformedVisitUUID,Q2.StudyParticipantPerformedVisitUUID),
-    coalesce(Q1.StudyParticipantFormUUID, Q2.StudyParticipantFormUUID),
-   -- coalesce(Q1.StudyParticipantItemGroupUUID,Q2.StudyParticipantItemGroupUUID),
-   -- coalesce(Q1.StudyParticipantItemUUID,Q2.StudyParticipantItemUUID),
-    Q1.CountofSDVRequired,
-    Q1.CountofSDVCompleted,
-    Q1.CountofSDVRequiredandCompleted,
-    Q1.SDVStatus,
-    Q2.FirstSDVDate,
-    Q2.LastSDVDate,
-    Q2.FirstUnverifiedDate,
-    Q2.LastUnverifiedDate
-( /*SDV counts and Status*/
-   select 
-		    stu.StudyUUID,
-		    stuenv.StudyEnvUUID,
-		    cty.StudyCountryUUID,
-		    ss.StudySiteUUID,
-		    sp.StudyParticipantUUID,
-		    sppv.StudyParticipantPerformedVisitUUID,
-		    spf.StudyParticipantFormUUID, 
-		    --spig.StudyParticipantItemGroupUUID,
-		    --spi.StudyParticipantItemUUID,
-		    SUM(f.CountofSDVRequired) over (partition by (spi.StudyParticipantFormUUID)) as CountofSDVRequired,
-		    SUM(f.CountofSDVCompleted) over (partition by (spi.StudyParticipantFormUUID)) as CountofSDVCompleted,
-		    SUM(f.CountofSDVRequiredandCompleted) over (partition by (spi.StudyParticipantFormUUID)) as CountofSDVRequiredandCompleted,
-		    Case when CountofSDVRequired >0 and CountofSDVRequired = CountofSDVRequiredandCompleted then 'SDV Complete' 
-                 when CountofSDVRequired >0 and CountofSDVRequired > CountofSDVRequiredandCompleted then 'SDV Partially Complete'
-                 when CountofSDVRequired >0 and CountofSDVRequiredandCompleted=0 then 'SDV Not Started'
-	         when CountofSDVRequired = 0 then 'SDV Not Required'
-            end as SDVStatus
-	    from FACT_STUDY_PARTICIPANT_ITEM_AGG_SDVSTATUS_RAVE f
-		inner join DIM_STUDY stu on stu.StudyKey = f.StudyKey 
-		inner join DIM_STUDYENV stuenv on stuenv.StudyEnvKey = f.StudyEnvKey
-		inner join DIM_STUDYCOUNTRY cty on cty.StudyCountryKey = f.StudyCountryKey
-		inner join DIM_STUDYSITE ss on ss.StudySiteKey = f.StudySiteKey
-		inner join DIM_STUDYPARTICIPANT sp on sp.StudyParticipantKey =f.StudyParticipantKey
-		inner join DIM_STUDYPARTICIPANTPERFORMEDVISIT sppv on sppv.StudyParticipantPerformedVisitKey = f.StudyParticipantPerformedVisitKey
-		inner join DIM_STUDYPARTICIPANTFORM spf on spf.StudyParticipantFormKey = f.StudyParticipantFormKey
-		inner join DIM_STUDYPARTCIPANTITEMGROUP spig on spig.StudyParticipantItemGroupKey = f.StudyParticipantItemGroupKey
-		inner join DIM_STUDYPARTICIPANTITEM spi on spi.StudyParticipantItemKey = f.StudyParticipantItemKey
-		where f.BusinessDatetime <= &&SIMEnddate 
-	    and   f.SystemDateTime = ( SELECT MAX(f.SystemDateTime) over (partition by (spi.BusinessDatetime)) 
-				                   FROM DIM_STUDYPARTICIPANTITEM spi 
-				                   WHERE spi.BusinessDatetime <= &&SIMEnddate
-				                   AND spi.StudyParticipantItemKey = f.StudyParticipantItemKey
-				                 )
-	    group by stu.StudyUUID, stuenv.StudyEnvUUID, cty.StudyCountryUUID, ss.StudySiteUUID, sp.StudyParticipantUUID, sppv.StudyParticipantPerformedVisitUUID, spf.StudyParticipantFormUUID 
-		       
-        
-) Q1
+ --Cumulative SDV Counts and Status for Begin date
 
-full outer join
-
---SDV DATES
-
- ( select 
-    coalesce(IQ1.StudyUUID,IQ2.StudyUUID) as StudyUUID,
-    coalesce(IQ1.StudyEnvUUID, IQ2.StudyEnvUUID) as StudyEnvUUID,
-    coalesce(IQ1.StudyCountryUUID,IQ2.StudyCountryUUID) as StudyCountryUUID,
-    coalesce(IQ1.StudySiteUUID, IQ2.StudySiteUUID) as StudySiteUUID,
-    coalesce(IQ1.StudyParticipantUUID, IQ2.StudyParticipantUUID) as StudyParticipantUUID,
-    coalesce(IQ1.StudyParticipantPerformedVisitUUID, IQ2.StudyParticipantPerformedVisitUUID) as StudyParticipantPerformedVisitUUID,
-    coalesce(IQ1.StudyParticipantFormUUID,IQ2.StudyParticipantFormUUID) as StudyParticipantFormUUID,
-   -- coalesce(IQ1.StudyParticipantItemGroupUUID, IQ2.StudyParticipantItemGroupUUID) as StudyParticipantItemGroupUUID,
-   -- coalesce(IQ1.StudyParticipantItemUUID, IQ2.StudyParticipantItemUUID) as StudyParticipantItemUUID,
-    IQ1.FirstSDVDate,
-    IQ1.LastSDVDate,
-    IQ2.FirstUnverifiedDate,
-    IQ2.LastUnverifiedDate
-from
-	 (      select 
-				    stu.StudyUUID,
-				    stuenv.StudyEnvUUID,
-				    cty.StudyCountryUUID,
-				    ss.StudySiteUUID,
-				    sp.StudyParticipantUUID,
-				    sppv.StudyParticipantPerformedVisitUUID, 
-				    spf.StudyParticipantFormUUID, 
-				    --spfig.StudyParticipantItemGroupUUID,
-				    --spi.StudyParticipantItemUUID,
-				    MIN(f.AuditDatetime) as FirstSDVdate,
-				    MAX(f.AuditDatetime) as LastSDVdate 
-		     FROM   FACT_STUDY_PARTICIPANT_ITEM_AUDIT_RAVE f 
-					inner join DIM_STUDY stu on stu.StudyKey = f.StudyKey
-					inner join DIM_STUDYENV stuenv on stuenv.StudyEnvKey = f.StudyEnvKey
-					inner join DIM_STUDYCOUNTRY cty on cty.StudyCountryKey = f.StudyCountryKey
-					inner join DIM_STUDYSITE ss on ss.StudySiteKey = f.StudySiteKey
-					inner join DIM_STUDYPARTICIPANT sp on sp.StudyParticipantKey =f.StudyParticipantKey
-					inner join DIM_STUDYPARTICIPANTPERFORMEDVISIT sppv on sppv.StudyParticipantPerformedVisitKey = f.StudyParticipantPerformedVisitKey
-					inner join DIM_STUDYPARTICIPANTFORM spf on spf.StudyParticipantFormKey = f.StudyParticipantFormKey
-					inner join DIM_STUDYPARTCIPANTITEMGROUP spig on spig.StudyParticipantItemGroupKey = f.StudyParticipantItemGroupKey
-					inner join DIM_STUDYPARTICIPANTITEM spi on spi.StudyParticipantItemKey = f.StudyParticipantItemKey  
-					inner join DIM_STUDYPARTICIPANTITEMAUDIT spia on spia.AuditKey = f.AuditKey
-				    where f.BusinessDatetime <= &&SIMEnddate 
-				    AND   f.SystemDatetime = ( SELECT MAX(spia.SystemDatetime) over (partition by spia.BusinessDatetime)
-				                               from DIM_STUDYPARTICIPANTITEMAUDIT spia
-                                                  where spia.BusinessDateTime = f.BusinessDateTime 
-                                                  and spia.StudyParticipantItemKey = f.StudyParticipantItemKey
-                                                  and spia.BusinessDatetime <= &&SIMEnddate 
-                                                  and spia.AuditSubcategoryID in (17)
-                                              )
-				    AND f.AuditSubcategoryID in (17)
-		     group by stu.StudyUUID, stuenv.StudyEnvUUID, cty.StudyCountryUUID, ss.StudySiteUUID, sp.StudyParticipantUUID, sppv.StudyParticipantPerformedVisitUUID, spf.StudyParticipantFormUUID 
-	                        
-       ) IQ1 
-
-FULL OUTER JOIN
-
-		(    select 
-				    stu.StudyUUID,
-				    stuenv.StudyEnvUUID,
-				    cty.StudyCountryUUID,
-				    ss.StudySiteUUID,
-				    sp.StudyParticipantUUID,
-				    sppv.StudyParticipantPerformedVisitUUID, 
-				    spf.StudyParticipantFormUUID, 
-				    --spfig.StudyParticipantItemGroupUUID,
-				    --spi.StudyParticipantItemUUID,
-				    MIN(f.AuditDatetime) as FirstUnverifieddate,
-				    MAX(f.AuditDatetime) as LastUnverifieddate 
-		     FROM   FACT_STUDY_PARTICIPANT_ITEM_AUDIT_RAVE f 
-					inner join DIM_STUDY stu on stu.StudyKey = f.StudyKey
-					inner join DIM_STUDYENV stuenv on stuenv.StudyEnvKey = f.StudyEnvKey
-					inner join DIM_STUDYCOUNTRY cty on cty.StudyCountryKey = f.StudyCountryKey
-					inner join DIM_STUDYSITE ss on ss.StudySiteKey = f.StudySiteKey
-					inner join DIM_STUDYPARTICIPANT sp on sp.StudyParticipantKey =f.StudyParticipantKey
-					inner join DIM_STUDYPARTICIPANTPERFORMEDVISIT sppv on sppv.StudyParticipantPerformedVisitKey = f.StudyParticipantPerformedVisitKey
-					inner join DIM_STUDYPARTICIPANTFORM spf on spf.StudyParticipantFormKey = f.StudyParticipantFormKey
-					inner join DIM_STUDYPARTCIPANTITEMGROUP spig on spig.StudyParticipantItemGroupKey = f.StudyParticipantItemGroupKey
-					inner join DIM_STUDYPARTICIPANTITEM spi on spi.StudyParticipantItemKey = f.StudyParticipantItemKey  
-					inner join DIM_STUDYPARTICIPANTITEMAUDIT spia on spia.AuditKey = f.AuditKey
-				    where f.BusinessDatetime <= &&SIMEnddate 
-				    AND   f.SystemDatetime = ( SELECT MAX(spia.SystemDatetime) over (partition by spia.BusinessDatetime)
-				                               from DIM_STUDYPARTICIPANTITEMAUDIT spia
-                                                  where spia.BusinessDateTime = f.BusinessDateTime 
-                                                  and spia.StudyParticipantItemKey = f.StudyParticipantItemKey
-                                                  and spia.BusinessDatetime <= &&SIMEnddate 
-                                                  and spia.AuditSubcategoryID in (18)
-                                              )
-				    AND f.AuditSubcategoryID in (18)
-		     group by stu.StudyUUID, stuenv.StudyEnvUUID, cty.StudyCountryUUID, ss.StudySiteUUID, sp.StudyParticipantUUID, sppv.StudyParticipantPerformedVisitUUID, spf.StudyParticipantFormUUID
-	                        
-        ) IQ2 
-
-) Q2
+(select      f.STU_KEY,
+            f.STU_ENV_KEY, 
+            f.CTY_KEY,
+            f.STU_SITE_KEY,
+            f.STU_PNT_KEY, 
+            f.STU_PNT_PRF_EVT_KEY,
+            f.stu_pnt_frm_key,
+            max(business_dt_time),
+            max(f.sys_dt_time),
+SUM(f.CNT_OF_SDV_REQ) as CountofSDVRequired,
+SUM(f.CNT_OF_SDV_COMPLETED) as CountofSDVCompleted,
+SUM(f.CNT_OF_SDV_REQ_AND_COMPLETED) as CountofSDVRequiredandCompleted,
+Case 
+when SUM(f.CNT_OF_SDV_REQ) >0 and SUM(f.CNT_OF_SDV_REQ_AND_COMPLETED) = SUM(f.CNT_OF_SDV_REQ) then 'SDV Complete' 
+when SUM(f.CNT_OF_SDV_REQ) >0 and SUM(f.CNT_OF_SDV_REQ_AND_COMPLETED) < SUM(f.CNT_OF_SDV_REQ) then 'SDV Partially Complete'
+when SUM(f.CNT_OF_SDV_REQ) =0 and SUM(f.CNT_OF_SDV_REQ_AND_COMPLETED) >=0 then 'SDV Not required'
+end as SDVStatus  
+from FACT_STU_PNT_ITM_AGG_SDVSTATUS_RAVE f
+		inner join DIM_STU stu on stu.STU_KEY = f.STU_KEY
+		inner join DIM_STU_ENV stuenv on stuenv.STU_ENV_KEY = f.STU_ENV_KEY
+		inner join DIM_CTY cty on cty.CTY_KEY = f.CTY_KEY
+		inner join DIM_STU_SITE ss on ss.STU_SITE_KEY = f.STU_SITE_KEY
+		inner join DIM_STU_PNT sp on sp.STU_PNT_KEY =f.STU_PNT_KEY
+		inner join DIM_STU_PNT_PRF_EVT sppv on sppv.STU_PNT_PRF_EVT_KEY = f.STU_PNT_PRF_EVT_KEY
+		inner join DIM_STU_PNT_FRM spf on spf.STU_PNT_FRM_KEY = f.STU_PNT_FRM_KEY
+		inner join DIM_STU_PNT_ITM_GRP spig on spig.STU_PNT_ITM_GRP_KEY = f.STU_PNT_ITM_GRP_KEY
+		inner join DIM_STU_PNT_ITM spi on spi.STU_PNT_ITM_KEY = f.STU_PNT_ITM_KEY
+		where (f.STU_PNT_ITM_KEY,f.BUSINESS_DT_TIME,f.SYS_DT_TIME) IN 
+                                  ( select stu_pnt_itm_key,row_eff_at, max(load_dt) over (partition by                                                              stu_pnt_itm_key,row_eff_at) 
+                                    from DIM_STU_PNT_ITM spi 
+                                    where STU_UUID = TO_BINARY('11EDD461333B3E0998110E1498653597')
+                                    and row_eff_at <= '2024-01-21'
+                                    )
+        and stu.STU_KEY = ( select STU_KEY
+                          from DIM_STU stu
+                          where stu.STU_UUID = TO_BINARY('11EDD461333B3E0998110E1498653597')
+                          and stu.row_eff_at <= '2024-01-21' )
+	    group by f.STU_KEY,f.STU_ENV_KEY, f.CTY_KEY,f.STU_SITE_KEY,f.STU_PNT_KEY,f.STU_PNT_PRF_EVT_KEY,f.STU_PNT_FRM_KEY 
+) 
 
 
+--Cumulative SDV Counts and Status for End Date
+(select      f.STU_KEY,
+            f.STU_ENV_KEY, 
+            f.CTY_KEY,
+            f.STU_SITE_KEY,
+            f.STU_PNT_KEY, 
+            f.STU_PNT_PRF_EVT_KEY,
+            f.stu_pnt_frm_key,
+            max(business_dt_time),
+            max(f.sys_dt_time),
+SUM(f.CNT_OF_SDV_REQ) as CountofSDVRequired,
+SUM(f.CNT_OF_SDV_COMPLETED) as CountofSDVCompleted,
+SUM(f.CNT_OF_SDV_REQ_AND_COMPLETED) as CountofSDVRequiredandCompleted,
+Case 
+when SUM(f.CNT_OF_SDV_REQ) >0 and SUM(f.CNT_OF_SDV_REQ_AND_COMPLETED) = SUM(f.CNT_OF_SDV_REQ) then 'SDV Complete' 
+when SUM(f.CNT_OF_SDV_REQ) >0 and SUM(f.CNT_OF_SDV_REQ_AND_COMPLETED) < SUM(f.CNT_OF_SDV_REQ) then 'SDV Partially Complete'
+when SUM(f.CNT_OF_SDV_REQ) =0 and SUM(f.CNT_OF_SDV_REQ_AND_COMPLETED) >=0 then 'SDV Not required'
+end as SDVStatus  
+from FACT_STU_PNT_ITM_AGG_SDVSTATUS_RAVE f
+		inner join DIM_STU stu on stu.STU_KEY = f.STU_KEY
+		inner join DIM_STU_ENV stuenv on stuenv.STU_ENV_KEY = f.STU_ENV_KEY
+		inner join DIM_CTY cty on cty.CTY_KEY = f.CTY_KEY
+		inner join DIM_STU_SITE ss on ss.STU_SITE_KEY = f.STU_SITE_KEY
+		inner join DIM_STU_PNT sp on sp.STU_PNT_KEY =f.STU_PNT_KEY
+		inner join DIM_STU_PNT_PRF_EVT sppv on sppv.STU_PNT_PRF_EVT_KEY = f.STU_PNT_PRF_EVT_KEY
+		inner join DIM_STU_PNT_FRM spf on spf.STU_PNT_FRM_KEY = f.STU_PNT_FRM_KEY
+		inner join DIM_STU_PNT_ITM_GRP spig on spig.STU_PNT_ITM_GRP_KEY = f.STU_PNT_ITM_GRP_KEY
+		inner join DIM_STU_PNT_ITM spi on spi.STU_PNT_ITM_KEY = f.STU_PNT_ITM_KEY
+		where (f.STU_PNT_ITM_KEY,f.BUSINESS_DT_TIME,f.SYS_DT_TIME) IN 
+                                  ( select stu_pnt_itm_key,row_eff_at, max(load_dt) over (partition by                                                              stu_pnt_itm_key,row_eff_at) 
+                                    from DIM_STU_PNT_ITM spi 
+                                    where STU_UUID = TO_BINARY('11EDD461333B3E0998110E1498653597')
+                                    and row_eff_at <= '2024-04-21'
+                                    )
+        and stu.STU_KEY = ( select STU_KEY
+                          from DIM_STU stu
+                          where stu.STU_UUID = TO_BINARY('11EDD461333B3E0998110E1498653597')
+                          and stu.row_eff_at <= '2024-04-21' )
+	    group by f.STU_KEY,f.STU_ENV_KEY, f.CTY_KEY,f.STU_SITE_KEY,f.STU_PNT_KEY,f.STU_PNT_PRF_EVT_KEY,f.STU_PNT_FRM_KEY
+) 
+
+--Verified Dates at form level
+(select        stu.STU_uuid,
+              stuenv.STU_ENV_uuid, 
+              cty.CTY_uuid,
+              ss.STU_SITE_uuid,
+              sp.STU_PNT_uuid, 
+              mdv.mdv_uuid,
+              sppv.STU_PNT_PRF_EVT_uuid,
+              spf.stu_pnt_frm_uuid,
+              --spig.stu_pnt_itm_grp_uuid,
+              --spi.stu_pnt_itm_uuid,
+              max(business_dt_time),
+              max(f.sys_dt_time),
+			  MIN(f.AUDIT_DT_TIME) as FirstSDVdate,
+			  MAX(f.AUDIT_DT_TIME) as LastSDVdate 
+FROM   FACT_STU_PNT_ITM_AUDIT_RAVE f 
+inner join DIM_STU stu on stu.STU_KEY = f.STU_KEY
+inner join DIM_STU_ENV stuenv on stuenv.STU_ENV_KEY = f.STU_ENV_KEY
+left  join DIM_CTY cty on cty.CTY_KEY = f.CTY_KEY
+inner join DIM_STU_SITE ss on ss.STU_SITE_KEY = f.STU_SITE_KEY
+inner join DIM_STU_PNT sp on sp.STU_PNT_KEY =f.STU_PNT_KEY
+inner join DIM_MDV mdv on mdv.mdv_key = f.mdv_key
+left  join DIM_STU_PNT_PRF_EVT sppv on sppv.STU_PNT_PRF_EVT_KEY = f.STU_PNT_PRF_EVT_KEY
+inner join DIM_STU_PNT_FRM spf on spf.STU_PNT_FRM_KEY = f.STU_PNT_FRM_KEY
+inner join DIM_STU_PNT_ITM_GRP spig on spig.STU_PNT_ITM_GRP_KEY = f.STU_PNT_ITM_GRP_KEY
+inner join DIM_STU_PNT_ITM spi on spi.STU_PNT_ITM_KEY = f.STU_PNT_ITM_KEY
+/*inner join DIM_ITM i on i.ITM_KEY = f.ITM_KEY
+left join  DIM_ITM_ALIAS ia on ia.ITM_UUID = i.ITM_UUID and ia.ITM_ALIAS_OID IN 
+                          ('AETERM','AESER','AESTDTC','AEENDDTC') -- Dimension Outrigger */
+inner join DIM_STU_PNT_ITM_AUDIT spia on spia.AUDIT_KEY = f.AUDIT_KEY                                    
+where (f.AUDIT_KEY,f.BUSINESS_DT_TIME,f.SYS_DT_TIME) IN 
+                    (select audit_key,row_eff_at,load_dt
+                     from DIM_STU_PNT_ITM_AUDIT 
+                     where (AUDIT_UUID,row_eff_at,load_dt) IN 
+                            (select distinct spia.audit_uuid, spia.row_eff_at,
+                                max(spia.load_dt) over (partition by audit_uuid,row_eff_at,AUDIT_SUBCAT_ID)  
+                             from DIM_STU_PNT_ITM_AUDIT spia
+                             where spia.STU_PNT_ITM_UUID IN (select spi.stu_pnt_itm_uuid                                                                                                      from DIM_STU_PNT_ITM spi
+                                                         where spi.STU_UUID=TO_BINARY('11EDD461333B3E0998110E1498653597')
+                                                             and spi.row_eff_at between '2024-01-21' and '2024-04-21' ) 
+                             and spia.AUDIT_SUBCAT_ID = 17
+                             and spia.row_eff_at between '2024-01-21' and '2024-04-21'
+                             )
+                     )
+and f.AUDIT_SUBCAT_KEY = (select AUDIT_SUBCAT_KEY 
+                         from DIM_AUDIT_SUBCATEGORY
+                         where AUDIT_SUBCAT_ID = 17)                          
+and f.STU_KEY = (select STU_KEY
+                 from DIM_STU stu
+                 where stu.STU_UUID = TO_BINARY('11EDD461333B3E0998110E1498653597')
+                 and stu.row_eff_at <= '2024-04-21'
+                  ) 
+group by stu.STU_uuid,stuenv.STU_ENV_uuid,cty.CTY_uuid,ss.STU_SITE_uuid,sp.STU_PNT_uuid,mdv.mdv_uuid,sppv.
+STU_PNT_PRF_EVT_uuid,spf.STU_PNT_FRM_uuid --,spig.stu_pnt_itm_grp_uuid,spi.stu_pnt_itm_uuid,spia.audit_uuid
+order by
+stu.STU_uuid,stuenv.STU_ENV_uuid,cty.CTY_uuid,ss.STU_SITE_uuid,sp.STU_PNT_uuid,mdv.mdv_uuid,sppv.STU_PNT_PRF_EVT_uuid,
+	spf.STU_PNT_FRM_uuid--,spig.stu_pnt_itm_grp_uuid,spi.stu_pnt_itm_uuid,spia.audit_uuid
+	)
+
+----UnVerified Dates at form level
+(
+select        stu.STU_uuid,
+              stuenv.STU_ENV_uuid, 
+              cty.CTY_uuid,
+              ss.STU_SITE_uuid,
+              sp.STU_PNT_uuid, 
+              mdv.mdv_uuid,
+              sppv.STU_PNT_PRF_EVT_uuid,
+              spf.stu_pnt_frm_uuid,
+              --spig.stu_pnt_itm_grp_uuid,
+              --spi.stu_pnt_itm_uuid,
+              max(business_dt_time),
+              max(f.sys_dt_time),
+			  MIN(f.AUDIT_DT_TIME) as FirstUnverifieddate,
+			  MAX(f.AUDIT_DT_TIME) as LastUnverifieddate 
+FROM   FACT_STU_PNT_ITM_AUDIT_RAVE f 
+inner join DIM_STU stu on stu.STU_KEY = f.STU_KEY
+inner join DIM_STU_ENV stuenv on stuenv.STU_ENV_KEY = f.STU_ENV_KEY
+left  join DIM_CTY cty on cty.CTY_KEY = f.CTY_KEY
+inner join DIM_STU_SITE ss on ss.STU_SITE_KEY = f.STU_SITE_KEY
+inner join DIM_STU_PNT sp on sp.STU_PNT_KEY =f.STU_PNT_KEY
+inner join DIM_MDV mdv on mdv.mdv_key = f.mdv_key
+left  join DIM_STU_PNT_PRF_EVT sppv on sppv.STU_PNT_PRF_EVT_KEY = f.STU_PNT_PRF_EVT_KEY
+inner join DIM_STU_PNT_FRM spf on spf.STU_PNT_FRM_KEY = f.STU_PNT_FRM_KEY
+inner join DIM_STU_PNT_ITM_GRP spig on spig.STU_PNT_ITM_GRP_KEY = f.STU_PNT_ITM_GRP_KEY
+inner join DIM_STU_PNT_ITM spi on spi.STU_PNT_ITM_KEY = f.STU_PNT_ITM_KEY
+/*inner join DIM_ITM i on i.ITM_KEY = f.ITM_KEY
+left join  DIM_ITM_ALIAS ia on ia.ITM_UUID = i.ITM_UUID and ia.ITM_ALIAS_OID IN 
+                          ('AETERM','AESER','AESTDTC','AEENDDTC') -- Dimension Outrigger */
+inner join DIM_STU_PNT_ITM_AUDIT spia on spia.AUDIT_KEY = f.AUDIT_KEY                                    
+where (f.AUDIT_KEY,f.BUSINESS_DT_TIME,f.SYS_DT_TIME) IN 
+                    (select audit_key,row_eff_at,load_dt
+                     from DIM_STU_PNT_ITM_AUDIT 
+                     where (AUDIT_UUID,row_eff_at,load_dt) IN 
+                            (select distinct spia.audit_uuid, spia.row_eff_at,
+                                max(spia.load_dt) over (partition by audit_uuid,row_eff_at,AUDIT_SUBCAT_ID)  
+                             from DIM_STU_PNT_ITM_AUDIT spia
+                             where spia.STU_PNT_ITM_UUID IN (select spi.stu_pnt_itm_uuid                                                                                                      from DIM_STU_PNT_ITM spi
+                                                         where spi.STU_UUID=TO_BINARY('11EDD461333B3E0998110E1498653597')
+                                                             and spi.row_eff_at between '2024-01-21' and '2024-04-21' ) 
+                             and spia.AUDIT_SUBCAT_ID = 18
+                             and spia.row_eff_at between '2024-01-21' and '2024-04-21'
+                             )
+                     )
+and f.AUDIT_SUBCAT_KEY = (select AUDIT_SUBCAT_KEY 
+                         from DIM_AUDIT_SUBCATEGORY
+                         where AUDIT_SUBCAT_ID = 18)                          
+and f.STU_KEY = (select STU_KEY
+                 from DIM_STU stu
+                 where stu.STU_UUID = TO_BINARY('11EDD461333B3E0998110E1498653597')
+                 and stu.row_eff_at <= '2024-04-21'
+                  ) 
+group by stu.STU_uuid,stuenv.STU_ENV_uuid,cty.CTY_uuid,ss.STU_SITE_uuid,sp.STU_PNT_uuid,mdv.mdv_uuid,sppv.
+STU_PNT_PRF_EVT_uuid,spf.STU_PNT_FRM_uuid --,spig.stu_pnt_itm_grp_uuid,spi.stu_pnt_itm_uuid,spia.audit_uuid
+order by
+stu.STU_uuid,stuenv.STU_ENV_uuid,cty.CTY_uuid,ss.STU_SITE_uuid,sp.STU_PNT_uuid,mdv.mdv_uuid,
+sppv.STU_PNT_PRF_EVT_uuid,spf.STU_PNT_FRM_uuid--,spig.stu_pnt_itm_grp_uuid,spi.stu_pnt_itm_uuid,spia.audit_uuid
+			                   
+)
