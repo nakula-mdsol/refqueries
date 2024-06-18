@@ -10,7 +10,7 @@
               spf.stu_pnt_frm_uuid,
               --spig.stu_pnt_itm_grp_uuid,
               --spi.stu_pnt_itm_uuid,
-            max(business_dt_time),
+            max(f.business_dt_time),
             max(f.sys_dt_time),
 SUM(f.CNT_OF_SDV_REQ) as CountofSDVRequired,
 SUM(f.CNT_OF_SDV_COMPLETED) as CountofSDVCompleted,
@@ -40,7 +40,10 @@ from FACT_STU_PNT_ITM_AGG_SDVSTATUS_RAVE f
                           from DIM_STU stu
                           where stu.STU_UUID = TO_BINARY('11EDD461333B3E0998110E1498653597')
                           and stu.row_eff_at <= '2024-01-21' )
-	    group by f.STU_KEY,f.STU_ENV_KEY, f.CTY_KEY,f.STU_SITE_KEY,f.STU_PNT_KEY,f.STU_PNT_PRF_EVT_KEY,f.STU_PNT_FRM_KEY 
+	group by stu.STU_uuid,stuenv.STU_ENV_uuid,cty.CTY_uuid,ss.STU_SITE_uuid,sp.STU_PNT_uuid,mdv.mdv_uuid,sppv.STU_PNT_PRF_EVT_uuid,
+	         spf.STU_PNT_FRM_uuid --,spig.stu_pnt_itm_grp_uuid,spi.stu_pnt_itm_uuid,spia.audit_uuid
+        order by stu.STU_uuid,stuenv.STU_ENV_uuid,cty.CTY_uuid,ss.STU_SITE_uuid,sp.STU_PNT_uuid,mdv.mdv_uuid,sppv.STU_PNT_PRF_EVT_uuid,
+	        spf.STU_PNT_FRM_uuid--,spig.stu_pnt_itm_grp_uuid,spi.stu_pnt_itm_uuid,spia.audit_uuid
 ) 
 
 
