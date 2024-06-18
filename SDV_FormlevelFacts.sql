@@ -1,4 +1,4 @@
- --Cumulative SDV Counts and Status for Begin date
+--Cumulative SDV Counts and Status for Study_uuid ='11EDD461333B3E0998110E1498653597' and Begin date of '2024-01-21'
 
 (select       stu.STU_uuid,
               stuenv.STU_ENV_uuid, 
@@ -44,7 +44,7 @@ from FACT_STU_PNT_ITM_AGG_SDVSTATUS_RAVE f
 ) 
 
 
---Cumulative SDV Counts and Status for End Date
+--Cumulative SDV Counts and Status for Study_uuid ='11EDD461333B3E0998110E1498653597' and End date of '2024-04-21'
 (select       stu.STU_uuid,
               stuenv.STU_ENV_uuid, 
               cty.CTY_uuid,
@@ -55,8 +55,8 @@ from FACT_STU_PNT_ITM_AGG_SDVSTATUS_RAVE f
               spf.stu_pnt_frm_uuid,
               --spig.stu_pnt_itm_grp_uuid,
               --spi.stu_pnt_itm_uuid,
-            max(business_dt_time),
-            max(f.sys_dt_time),
+              max(f.business_dt_time),
+              max(f.sys_dt_time),
 SUM(f.CNT_OF_SDV_REQ) as CountofSDVRequired,
 SUM(f.CNT_OF_SDV_COMPLETED) as CountofSDVCompleted,
 SUM(f.CNT_OF_SDV_REQ_AND_COMPLETED) as CountofSDVRequiredandCompleted,
@@ -91,7 +91,7 @@ from FACT_STU_PNT_ITM_AGG_SDVSTATUS_RAVE f
 	        spf.STU_PNT_FRM_uuid--,spig.stu_pnt_itm_grp_uuid,spi.stu_pnt_itm_uuid,spia.audit_uuid
 ) 
 
---Verified Dates at form level
+--Verified Dates at form level for Study_uuid ='11EDD461333B3E0998110E1498653597' and Begin date of '2024-01-21' and End date of '2024-04-21'
 (select        stu.STU_uuid,
               stuenv.STU_ENV_uuid, 
               cty.CTY_uuid,
@@ -102,10 +102,10 @@ from FACT_STU_PNT_ITM_AGG_SDVSTATUS_RAVE f
               spf.stu_pnt_frm_uuid,
               --spig.stu_pnt_itm_grp_uuid,
               --spi.stu_pnt_itm_uuid,
-              max(business_dt_time),
+              max(f.business_dt_time),
               max(f.sys_dt_time),
-			  MIN(f.AUDIT_DT_TIME) as FirstSDVdate,
-			  MAX(f.AUDIT_DT_TIME) as LastSDVdate 
+	      MIN(f.AUDIT_DT_TIME) as FirstSDVdate,
+	      MAX(f.AUDIT_DT_TIME) as LastSDVdate 
 FROM   FACT_STU_PNT_ITM_AUDIT_RAVE f 
 inner join DIM_STU stu on stu.STU_KEY = f.STU_KEY
 inner join DIM_STU_ENV stuenv on stuenv.STU_ENV_KEY = f.STU_ENV_KEY
@@ -146,7 +146,7 @@ order by stu.STU_uuid,stuenv.STU_ENV_uuid,cty.CTY_uuid,ss.STU_SITE_uuid,sp.STU_P
 	spf.STU_PNT_FRM_uuid--,spig.stu_pnt_itm_grp_uuid,spi.stu_pnt_itm_uuid,spia.audit_uuid
 	)
 
-----UnVerified Dates at form level
+----UnVerified Dates at form level for Study_uuid ='11EDD461333B3E0998110E1498653597' and Begin date of '2024-01-21' and End date of '2024-04-21'
 (
 select        stu.STU_uuid,
               stuenv.STU_ENV_uuid, 
@@ -158,10 +158,10 @@ select        stu.STU_uuid,
               spf.stu_pnt_frm_uuid,
               --spig.stu_pnt_itm_grp_uuid,
               --spi.stu_pnt_itm_uuid,
-              max(business_dt_time),
+              max(f.business_dt_time),
               max(f.sys_dt_time),
-			  MIN(f.AUDIT_DT_TIME) as FirstUnverifieddate,
-			  MAX(f.AUDIT_DT_TIME) as LastUnverifieddate 
+	      MIN(f.AUDIT_DT_TIME) as FirstUnverifieddate,
+	      MAX(f.AUDIT_DT_TIME) as LastUnverifieddate 
 FROM   FACT_STU_PNT_ITM_AUDIT_RAVE f 
 inner join DIM_STU stu on stu.STU_KEY = f.STU_KEY
 inner join DIM_STU_ENV stuenv on stuenv.STU_ENV_KEY = f.STU_ENV_KEY
