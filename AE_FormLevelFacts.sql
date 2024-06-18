@@ -10,7 +10,7 @@
               spf.stu_pnt_frm_uuid,
               --spig.stu_pnt_itm_grp_uuid,
               --spi.stu_pnt_itm_uuid,
-            max(business_dt_time),
+            max(f.business_dt_time),
             max(f.sys_dt_time),
 SUM(f.CNT_OF_SDV_REQ) as CountofSDVRequired,
 SUM(f.CNT_OF_SDV_COMPLETED) as CountofSDVCompleted,
@@ -30,6 +30,9 @@ from FACT_STU_PNT_ITM_AGG_SDVSTATUS_RAVE f
 		inner join DIM_STU_PNT_FRM spf on spf.STU_PNT_FRM_KEY = f.STU_PNT_FRM_KEY
 		inner join DIM_STU_PNT_ITM_GRP spig on spig.STU_PNT_ITM_GRP_KEY = f.STU_PNT_ITM_GRP_KEY
 		inner join DIM_STU_PNT_ITM spi on spi.STU_PNT_ITM_KEY = f.STU_PNT_ITM_KEY
+	        inner join DIM_ITM i on i.ITM_KEY = f.ITM_KEY
+                inner join  DIM_ITM_ALIAS ia on ia.ITM_UUID = i.ITM_UUID and ia.ITM_ALIAS_OID IN 
+                          ('AETERM','AESER','AESTDTC','AEENDDTC') -- Dimension Outrigger 
 		where (f.STU_PNT_ITM_KEY,f.BUSINESS_DT_TIME,f.SYS_DT_TIME) IN 
                                   ( select stu_pnt_itm_key,row_eff_at, max(load_dt) over (partition by                                                              stu_pnt_itm_key,row_eff_at) 
                                     from DIM_STU_PNT_ITM spi 
@@ -58,7 +61,7 @@ from FACT_STU_PNT_ITM_AGG_SDVSTATUS_RAVE f
               spf.stu_pnt_frm_uuid,
               --spig.stu_pnt_itm_grp_uuid,
               --spi.stu_pnt_itm_uuid,
-            max(business_dt_time),
+            max(f.business_dt_time),
             max(f.sys_dt_time),
 SUM(f.CNT_OF_SDV_REQ) as CountofSDVRequired,
 SUM(f.CNT_OF_SDV_COMPLETED) as CountofSDVCompleted,
@@ -108,7 +111,7 @@ from FACT_STU_PNT_ITM_AGG_SDVSTATUS_RAVE f
               spf.stu_pnt_frm_uuid,
               --spig.stu_pnt_itm_grp_uuid,
               --spi.stu_pnt_itm_uuid,
-              max(business_dt_time),
+              max(f.business_dt_time),
               max(f.sys_dt_time),
 	     MIN(f.AUDIT_DT_TIME) as FirstSDVdate,
 	     MAX(f.AUDIT_DT_TIME) as LastSDVdate 
@@ -167,7 +170,7 @@ select        stu.STU_uuid,
               spf.stu_pnt_frm_uuid,
               --spig.stu_pnt_itm_grp_uuid,
               --spi.stu_pnt_itm_uuid,
-              max(business_dt_time),
+              max(f.business_dt_time),
               max(f.sys_dt_time),
 			  MIN(f.AUDIT_DT_TIME) as FirstUnverifieddate,
 			  MAX(f.AUDIT_DT_TIME) as LastUnverifieddate 
