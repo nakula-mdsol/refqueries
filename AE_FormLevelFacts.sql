@@ -26,6 +26,7 @@ from FACT_STU_PNT_ITM_AGG_SDVSTATUS_RAVE f
 		inner join DIM_CTY cty on cty.CTY_KEY = f.CTY_KEY
 		inner join DIM_STU_SITE ss on ss.STU_SITE_KEY = f.STU_SITE_KEY
 		inner join DIM_STU_PNT sp on sp.STU_PNT_KEY =f.STU_PNT_KEY
+	        inner join DIM_MDV mdv on mdv.MDV_KEY = f.MDV_KEY
 		inner join DIM_STU_PNT_PRF_EVT sppv on sppv.STU_PNT_PRF_EVT_KEY = f.STU_PNT_PRF_EVT_KEY
 		inner join DIM_STU_PNT_FRM spf on spf.STU_PNT_FRM_KEY = f.STU_PNT_FRM_KEY
 		inner join DIM_STU_PNT_ITM_GRP spig on spig.STU_PNT_ITM_GRP_KEY = f.STU_PNT_ITM_GRP_KEY
@@ -77,6 +78,7 @@ from FACT_STU_PNT_ITM_AGG_SDVSTATUS_RAVE f
 		inner join DIM_CTY cty on cty.CTY_KEY = f.CTY_KEY
 		inner join DIM_STU_SITE ss on ss.STU_SITE_KEY = f.STU_SITE_KEY
 		inner join DIM_STU_PNT sp on sp.STU_PNT_KEY =f.STU_PNT_KEY
+	        inner join DIM_MDV mdv on mdv.MDV_KEY = f.MDV_KEY
 		inner join DIM_STU_PNT_PRF_EVT sppv on sppv.STU_PNT_PRF_EVT_KEY = f.STU_PNT_PRF_EVT_KEY
 		inner join DIM_STU_PNT_FRM spf on spf.STU_PNT_FRM_KEY = f.STU_PNT_FRM_KEY
 		inner join DIM_STU_PNT_ITM_GRP spig on spig.STU_PNT_ITM_GRP_KEY = f.STU_PNT_ITM_GRP_KEY
@@ -127,7 +129,7 @@ inner join DIM_STU_PNT_FRM spf on spf.STU_PNT_FRM_KEY = f.STU_PNT_FRM_KEY
 inner join DIM_STU_PNT_ITM_GRP spig on spig.STU_PNT_ITM_GRP_KEY = f.STU_PNT_ITM_GRP_KEY
 inner join DIM_STU_PNT_ITM spi on spi.STU_PNT_ITM_KEY = f.STU_PNT_ITM_KEY
 inner join DIM_ITM i on i.ITM_KEY = f.ITM_KEY
-inner join  DIM_ITM_ALIAS ia on ia.ITM_UUID = i.ITM_UUID and ia.ITM_ALIAS_OID IN 
+inner join DIM_ITM_ALIAS ia on ia.ITM_UUID = i.ITM_UUID and ia.ITM_ALIAS_OID IN 
                           ('AETERM','AESER','AESTDTC','AEENDDTC') -- Dimension Outrigger 
 inner join DIM_STU_PNT_ITM_AUDIT spia on spia.AUDIT_KEY = f.AUDIT_KEY                                    
 where (f.AUDIT_KEY,f.BUSINESS_DT_TIME,f.SYS_DT_TIME) IN 
